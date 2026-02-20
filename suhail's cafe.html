@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Suhail’s Café — Menu & Cart</title>
+  <style>
+    :root {
+      --primary: #e23744;
+      --dark: #1c1c1c;
+      --light: #ffffff;
+      --bg: #f9f9f9;
+      --radius: 10px;
+      --shadow: 0 8px 24px rgba(0,0,0,.12);
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--dark); }
+
+    header { background: var(--primary); color: var(--light); padding: 14px 22px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    header h1 { margin: 0; font-size: 1.4rem; }
+    .cart-btn { display: inline-flex; align-items: center; gap: 10px; background: #fff; color: var(--primary); border: none; padding: 10px 14px; border-radius: 999px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow); }
+    .cart-pill { background: var(--primary); color: #fff; padding: 2px 10px; border-radius: 999px; font-size: 12px; }
+
+    .hero { background: var(--primary); color: var(--light); text-align:center; padding: 44px 18px 60px; border-bottom-left-radius: 40px; border-bottom-right-radius: 40px; }
+    .hero h2 { margin: 0 0 6px; font-size: 1.8rem; }
+
+    .menu-section { max-width: 960px; margin: 28px auto; padding: 0 16px; }
+    .menu-category { margin: 28px 0 40px; }
+    .menu-category h3 { display: inline-block; margin: 0 0 14px; border-bottom: 3px solid var(--primary); padding-bottom: 6px; }
+
+    .menu-item { background:#fff; border-radius: var(--radius); padding: 12px 16px; box-shadow: 0 1px 0 rgba(0,0,0,.04); display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .item-title { margin:0; font-size: 1.05rem; }
+    .price { color: var(--primary); font-weight: 700; }
+
+    .add-btn, .stepper { transition: all 0.25s ease; }
+    .add-btn { background: var(--primary); color:#fff; border:none; padding: 8px 16px; border-radius: 999px; font-weight:700; cursor:pointer; }
+
+    .stepper { display:none; align-items:center; border:1px solid #eee; border-radius: 999px; overflow:hidden; }
+    .stepper button { background:#fafafa; border:none; width:32px; height:32px; cursor:pointer; font-size:18px; }
+    .stepper input { width:44px; text-align:center; border:none; outline:none; height:32px; }
+
+    .visible { display:inline-flex !important; }
+
+    .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: .2s; }
+    .drawer { position: fixed; top:0; right:-420px; width: 380px; max-width: 92vw; height: 100vh; background:#fff; box-shadow: var(--shadow); transition: right .25s ease; display:flex; flex-direction: column; }
+    .drawer.open { right:0; }
+    .drawer-overlay.open { opacity:1; pointer-events: auto; }
+
+    .cart-item { display:flex; justify-content: space-between; align-items:center; padding:10px; border-bottom:1px solid #eee; }
+    .cart-actions { display:flex; justify-content: space-between; align-items:center; margin-top:10px; }
+    .clear-btn, .place-btn, .pay-btn { border:none; padding:10px 14px; border-radius:8px; cursor:pointer; font-weight:600; }
+    .clear-btn { background:#f0f0f0; color:#333; }
+    .place-btn, .pay-btn { background:var(--primary); color:#fff; }
+
+    #paymentPopup { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px 30px; box-shadow:var(--shadow); border-radius:10px; text-align:center; z-index:999; }
+
+    #orderSuccess { display:none; position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:var(--primary); color:#fff; padding:14px 24px; border-radius:8px; box-shadow:var(--shadow); font-weight:600; }
+
+    footer { text-align:center; padding: 30px 12px; background: #111; color:#fff; margin-top: 40px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Suhail’s Café</h1>
+    <button class="cart-btn" id="openCart">🛒 Cart <span class="cart-pill" id="cartCount">0</span></button>
+  </header>
+
+  <section class="hero">
+    <h2>Fresh. Fast. Flavourful.</h2>
+    <p>Click add to choose your quantity and see your cart update instantly!</p>
+  </section>
+
+  <main class="menu-section" id="menu">
+    <div class="menu-category" id="menuList"></div>
+  </main>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="drawer" id="cartDrawer">
+    <header style="padding:14px 16px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
+      <h3>Your Cart</h3>
+      <button id="closeCart">Close</button>
+    </header>
+    <div id="cartItems" style="padding:12px;flex:1;overflow:auto;"></div>
+    <div style="padding:12px;border-top:1px solid #eee;">
+      <strong>Total: ₹<span id="cartTotal">0</span></strong>
+      <div class="cart-actions">
+        <button class="clear-btn" id="clearCart">Clear Cart</button>
+        <button class="place-btn" id="placeOrder">Place Order</button>
+      </div>
+      <div id="deliveryForm" style="display:none; margin-top:10px;">
+        <input type="text" id="custName" placeholder="Your Name" style="width:100%;margin-bottom:6px;padding:8px;">
+        <input type="text" id="custAddress" placeholder="Delivery Address" style="width:100%;margin-bottom:6px;padding:8px;">
+        <input type="tel" id="custPhone" placeholder="Phone / WhatsApp" style="width:100%;margin-bottom:6px;padding:8px;">
+        <div style="margin:10px 0;">
+          <label><strong>Payment Method:</strong></label><br>
+          <label><input type="radio" name="payment" value="UPI" checked> UPI</label><br>
+          <label><input type="radio" name="payment" value="Card"> Card</label><br>
+          <label><input type="radio" name="payment" value="COD"> Cash on Delivery</label>
+        </div>
+        <button class="pay-btn" id="payNow">Pay Now</button>
+      </div>
+    </div>
+  </aside>
+
+  <div id="paymentPopup">
+    <h3>Processing Payment...</h3>
+    <p>Please wait while we complete your transaction.</p>
+  </div>
+
+  <div id="orderSuccess">✅ Order placed successfully!</div>
+
+  <footer>© 2025 Suhail’s Café • Designed by Thansheeh</footer>
+
+  <script>
+    const menuData = {
+      Burgers: [
+        { name: 'Classic Chicken Burger', price: 180 },
+        { name: 'Veggie Delight Burger', price: 150 },
+        { name: 'Cheese Burst Burger', price: 200 }
+      ],
+      Sandwiches: [
+        { name: 'Grilled Cheese Sandwich', price: 130 },
+        { name: 'Chicken Club Sandwich', price: 160 },
+        { name: 'Veg Sandwich', price: 120 }
+      ],
+      Coffee: [
+        { name: 'Cappuccino', price: 160 },
+        { name: 'Cold Coffee', price: 180 },
+        { name: 'Espresso', price: 140 }
+      ],
+      Tea: [
+        { name: 'Masala Chai', price: 50 },
+        { name: 'Green Tea', price: 70 },
+        { name: 'Lemon Tea', price: 60 }
+      ],
+      'Jumbo Roll': [
+        { name: 'Chicken Jumbo Roll', price: 200 },
+        { name: 'Paneer Jumbo Roll', price: 180 },
+        { name: 'Egg Roll', price: 150 }
+      ]
+    };
+
+    const cart = new Map();
+    const cartCount = document.getElementById('cartCount');
+    const cartTotal = document.getElementById('cartTotal');
+    const cartDrawer = document.getElementById('cartDrawer');
+    const overlay = document.getElementById('drawerOverlay');
+    const cartItems = document.getElementById('cartItems');
+    const orderSuccess = document.getElementById('orderSuccess');
+    const menuContainer = document.getElementById('menuList');
+
+    // Build menu dynamically
+    for (const [category, items] of Object.entries(menuData)) {
+      const section = document.createElement('div');
+      section.className = 'menu-category';
+      section.innerHTML = `<h3>${category}</h3>`;
+      items.forEach(({ name, price }) => {
+        const div = document.createElement('div');
+        div.className = 'menu-item';
+        div.dataset.name = name;
+        div.dataset.price = price;
+        div.innerHTML = `
+          <div>
+            <h4 class="item-title">${name}</h4>
+            <span class="price">₹${price}</span>
+          </div>
+          <div class="controls">
+            <button class="add-btn">Add</button>
+            <div class="stepper">
+              <button class="dec">−</button>
+              <input type="number" value="1" min="1" class="qty">
+              <button class="inc">+</button>
+            </div>
+          </div>`;
+        section.appendChild(div);
+      });
+      menuContainer.appendChild(section);
+    }
+
+    function updateCart() {
+      let total = 0, count = 0;
+      cartItems.innerHTML = '';
+      cart.forEach(({ qty, price }, name) => {
+        total += qty * price;
+        count += qty;
+        const div = document.createElement('div');
+        div.className = 'cart-item';
+        div.innerHTML = `<span>${name} × ${qty}</span><span>₹${qty * price}</span>`;
+        cartItems.appendChild(div);
+      });
+      cartTotal.textContent = total.toFixed(2);
+      cartCount.textContent = count;
+    }
+
+    function resetMenu() {
+      document.querySelectorAll('.menu-item').forEach(item => {
+        const addBtn = item.querySelector('.add-btn');
+        const stepper = item.querySelector('.stepper');
+        const qtyInput = stepper.querySelector('.qty');
+        qtyInput.value = 1;
+        stepper.classList.remove('visible');
+        addBtn.style.display = 'inline-block';
+      });
+    }
+
+    function attachMenuEvents() {
+      document.querySelectorAll('.menu-item').forEach(item => {
+        const addBtn = item.querySelector('.add-btn');
+        const stepper = item.querySelector('.stepper');
+        const dec = stepper.querySelector('.dec');
+        const inc = stepper.querySelector('.inc');
+        const qtyInput = stepper.querySelector('.qty');
+        const name = item.dataset.name;
+        const price = +item.dataset.price;
+
+        addBtn.addEventListener('click', () => {
+          addBtn.style.display = 'none';
+          stepper.classList.add('visible');
+          cart.set(name, { qty: 1, price });
+          updateCart();
+        });
+
+        inc.addEventListener('click', () => {
+          let qty = +qtyInput.value + 1;
+          qtyInput.value = qty;
+          cart.set(name, { qty, price });
+          updateCart();
+        });
+
+        dec.addEventListener('click', () => {
+          let qty = +qtyInput.value - 1;
+          if (qty <= 0) {
+            stepper.classList.remove('visible');
+            addBtn.style.display = 'inline-block';
+            cart.delete(name);
+            qty = 1;
+          }
+          qtyInput.value = qty;
+          updateCart();
+        });
+      });
+    }
+
+    attachMenuEvents();
+
+    // Drawer controls
+    document.getElementById('openCart').onclick = () => {
+      cartDrawer.classList.add('open');
+      overlay.classList.add('open');
+    };
+    document.getElementById('closeCart').onclick = () => {
+      cartDrawer.classList.remove('open');
+      overlay.classList.remove('open');
+    };
+    overlay.onclick = () => {
+      cartDrawer.classList.remove('open');
+      overlay.classList.remove('open');
+    };
+
+    // Cart actions
+    document.getElementById('clearCart').onclick = () => {
+      cart.clear();
+      updateCart();
+    };
+
+    document.getElementById('placeOrder').onclick = () => {
+      document.getElementById('deliveryForm').style.display = 'block';
+    };
+
+    document.getElementById('payNow').onclick = () => {
+      const popup = document.getElementById('paymentPopup');
+      popup.style.display = 'block';
+      setTimeout(() => {
+        popup.innerHTML = '<h3>✅ Payment Successful!</h3><p>Thank you for your order.</p>';
+        setTimeout(() => {
+          popup.style.display = 'none';
+          const name = document.getElementById('custName').value.trim();
+          const address = document.getElementById('custAddress').value.trim();
+          const phone = document.getElementById('custPhone').value.trim();
+          alert(`Order placed successfully!\nName: ${name}\nAddress: ${address}\nPhone: ${phone}`);
+          cart.clear();
+          updateCart();
+          resetMenu();
+          document.getElementById('deliveryForm').style.display = 'none';
+          popup.innerHTML = '<h3>Processing Payment...</h3><p>Please wait while we complete your transaction.</p>';
+          orderSuccess.style.display = 'block';
+          setTimeout(() => orderSuccess.style.display = 'none', 3000);
+        }, 2000);
+      }, 1500);
+    };
+  </script>
+</body>
+</html>
+
+

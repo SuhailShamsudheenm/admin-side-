@@ -1,0 +1,9 @@
+.box {
+background-color:red;
+padding: 20px;
+border: 20px solid black;
+margin: 20px;
+}
+.box-one{
+background-color: aqua;
+}

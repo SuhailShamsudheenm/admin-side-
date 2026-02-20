@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Calculator</title>
+<style>
+body{text-align:center;font-family:Arial}
+input,button{margin:5px;padding:8px}
+#res{font-weight:bold;margin-top:10px}
+</style>
+</head>
+
+<body>
+<h3>Calculator</h3>
+<input id="a" type="number" placeholder="No 1">
+<input id="b" type="number" placeholder="No 2"><br>
+
+<button onclick="calc('+')">+</button>
+<button onclick="calc('-')">-</button>
+<button onclick="calc('')"></button>
+<button onclick="calc('/')">/</button>
+
+<div id="res"></div>
+
+<script>
+function calc(op){
+let x=+a.value,y=+b.value;
+res.innerText = 
+(op=='/' && y==0) ? "Cannot divide by zero" :
+"Result: " + eval(x+op+y);
+}
+</script>
+</body>
+</html>
